@@ -1,0 +1,39 @@
+# Python compiled files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pyzw
+
+# Virtual environment
+venv/
+env/
+env.bak/
+*.venv/
+
+# Dependency folders
+lib/
+libs/
+lib64/
+include/
+includes/
+bin/
+share/
+
+# Other system-generated files
+.DS_Store
+Thumbs.db
+*.DS_Store?
+*.AppleDouble
+ehthumbs.db
+Icon?
+._*
+
+ytlisten-orig.py
+build/
+dist/
+*.egg-info/
+test
+setup-orig.py
