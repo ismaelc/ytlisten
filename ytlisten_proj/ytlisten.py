@@ -78,6 +78,9 @@ def main():
             player.stop()
             break
 
+    except IndexError as e:
+        print("No media found. Try tweaking your search")
+
     except KeyboardInterrupt as e:
         # Handle keyboard interrupt gracefully
         player.stop()
