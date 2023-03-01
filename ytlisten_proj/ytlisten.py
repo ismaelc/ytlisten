@@ -4,6 +4,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import vlc
 import pytube
+import time
 
 # Set up the YouTube Data API v3 client
 API_KEY = os.environ["YT_API_KEY"]
@@ -28,16 +29,26 @@ def get_video_url(query):
     return f"https://www.youtube.com/watch?v={video_id}"
 
 
-def download_audio(url):
-    video = pytube.YouTube(url)
+def get_stream(video_url):
+    video = pytube.YouTube(video_url)
+    print(f'[{video.title}]')
     audio_stream = video.streams.filter(only_audio=True).first()
-    audio_file = audio_stream.download()
-    return audio_file
+    return audio_stream
 
 
-def play_audio(audio_file):
-    player = vlc.MediaPlayer(audio_file)
-    player.play()
+def get_player(audio_stream):
+
+    # create a new instance of the vlc module with the --no-xlib argument
+    args = ["--no-xlib", "--quiet", "--no-video"]
+    instance = vlc.Instance(args)
+
+    # create a media player with the new instance
+    player = instance.media_player_new()
+
+    # create a media object with the audio stream URL
+    media = instance.media_new(audio_stream.url)
+
+    player.set_media(media)
     return player
 
 
@@ -52,16 +63,31 @@ def main():
 
     try:
         url = get_video_url(query)
-        audio_file = download_audio(url)
-        player = play_audio(audio_file)
+        audio_stream = get_stream(url)
+        player = get_player(audio_stream)
+        player.play()
 
-        input("Press enter to stop playback")
+        # Wait for the media to finish playing
+        player_event_manager = player.event_manager()
+        player_event_manager.event_attach(
+            vlc.EventType.MediaPlayerEndReached, lambda _: player.stop())
 
+        # Wait for the user to stop the audio file playback
+        while True:
+            input("Press enter to stop playback\n")
+            player.stop()
+            break
+
+    except KeyboardInterrupt as e:
+        # Handle keyboard interrupt gracefully
         player.stop()
-        os.remove(audio_file)
+        print("\nAudio playback stopped by the user.")
 
     except HttpError as e:
         print(f'An error occurred: {e}')
+
+    except vlc.VLCException as e:
+        print('Error', e)
 
 
 if __name__ == "__main__":
