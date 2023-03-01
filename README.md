@@ -66,6 +66,7 @@ Contributions are welcome!
 
 ```
 python setup.py sdist bdist_wheel
+# https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account
 twine upload dist/*
 ```
 
