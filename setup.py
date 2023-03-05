@@ -5,7 +5,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='ytlisten',
-    version='0.23',
+    version='0.24',
     description='A command-line tool to search and listen to YouTube audio',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',

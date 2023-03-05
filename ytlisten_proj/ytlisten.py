@@ -1,10 +1,15 @@
-import argparse
 import os
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+import sys
+import tty
+import time
+import termios
+import argparse
+
 import vlc
 import pytube
-import time
+
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 # Set up the YouTube Data API v3 client
 API_KEY = os.environ["YT_API_KEY"]
@@ -14,7 +19,7 @@ youtube = build(YOUTUBE_API_SERVICE_NAME,
                 YOUTUBE_API_VERSION, developerKey=API_KEY)
 
 
-def get_video_url(query):
+def get_video_urls(query, count=1):
     youtube = build(YOUTUBE_API_SERVICE_NAME,
                     YOUTUBE_API_VERSION, developerKey=API_KEY)
     request = youtube.search().list(
@@ -22,7 +27,7 @@ def get_video_url(query):
         q=query,
         type="video",
         videoDefinition="high",
-        maxResults=1
+        maxResults=count
     )
     response = request.execute()
     video_id = response['items'][0]['id']['videoId']
@@ -59,10 +64,13 @@ def main():
     args = parser.parse_args()
 
     # Get the search query from the command line arguments
-    query = ' '.join(args.query)
+    query = ' '.join(args.query).strip()
+
+    # Save the terminal settings
+    old_settings = termios.tcgetattr(sys.stdin)
 
     try:
-        url = get_video_url(query)
+        url = get_video_urls(query)
         audio_stream = get_stream(url)
         player = get_player(audio_stream)
         player.play()
@@ -72,11 +80,22 @@ def main():
         player_event_manager.event_attach(
             vlc.EventType.MediaPlayerEndReached, lambda _: player.stop())
 
-        # Wait for the user to stop the audio file playback
+        # Set the terminal to raw mode
+        tty.setraw(sys.stdin.fileno())
+
+        print('Press SPACE to pause. ENTER to quit.')
         while True:
-            input("Press enter to stop playback\n")
-            player.stop()
-            break
+            # Wait for 100 milliseconds
+            time.sleep(0.5)
+
+            # Wait for a single keypress
+            key = sys.stdin.read(1)
+
+            if key == ' ':
+                player.pause()  # Pause the playback
+            elif key == '\r':
+                player.stop()  # Stop the playback
+                break
 
     except IndexError as e:
         print("No media found. Try tweaking your search")
@@ -91,6 +110,10 @@ def main():
 
     except vlc.VLCException as e:
         print('Error', e)
+
+    finally:
+        # Restore the terminal settings
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
 
 
 if __name__ == "__main__":
